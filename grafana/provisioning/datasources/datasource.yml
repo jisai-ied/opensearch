@@ -1,0 +1,22 @@
+apiVersion: 1
+
+datasources:
+
+- name: OpenSearchNode1
+  type: grafana-opensearch-datasource
+  access: proxy
+  url: https://opensearch-node1:9200
+  basicAuth: true
+  basicAuthUser: admin
+  secureJsonData:
+    basicAuthPassword: admin
+  isDefault: true
+  jsonData:
+    tslAuth: false
+    tslSkipVerify: true
+  database: "opensearch_dashboards_sample_data_logs"
+  interval: Daily
+  timestamp: '@timestamp'
+  version: 2
+  flavor: "opensearch"
+  editable: true
