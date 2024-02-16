@@ -44,7 +44,8 @@ resource "aws_instance" "opensearch" {
 }
 ```
 
-Referencia a resource
+#### Referencia a resource
+
 ```terraform
 provider "aws" {
   region = "eu-west-1"
@@ -76,3 +77,9 @@ resource "aws_instance" "opensearch" {
   }
 }
 ```
+
+#### Terraform files
+
+In this ```.terraform/``` file, terraform installs all the plugins our code needs.
+
+The ```terraform.tfstate``` represents all terraform states. Its to follow the changes.

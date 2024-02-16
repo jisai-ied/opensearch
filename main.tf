@@ -10,20 +10,20 @@ resource "aws_vpc" "firts-vpc" {
 }
 
 resource "aws_subnet" "subnet-1" {
-    vpc_id = aws_vpc.firts-vpc.id
+    vpc_id  = aws_vpc.firts-vpc.id
 
     cidr_block = "10.0.1.0/24"
 
-    tags = {
-      Name = "dev-subnet"
+    tags  = {
+      Name  = "dev-subnet"
     }
 }
 
 resource "aws_instance" "opensearch" {
-  ami           = "ami-0905a3c97561e0b69"
+  ami  = "ami-0905a3c97561e0b69"
   instance_type = "t2.micro"
 
   tags = {
-    Name = "ubuntu-server-opensearch"
+    Name  = "ubuntu-server-opensearch"
   }
 }
