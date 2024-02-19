@@ -1,5 +1,6 @@
 ## Terraform
 
+Based on this [freeCodeCamp](https://www.youtube.com/watch?v=SLB_c_ayRMo) tutorial
 ### Authenticated in AWS
 ```sh
 aws sso login
@@ -239,4 +240,4 @@ resource "aws_instance" "opensearch" {
     Name = "ubuntu-server-opensearch"
   }
 }
-´´´
+```
