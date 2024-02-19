@@ -1,5 +1,5 @@
 provider "aws" {
-  region = var.aws_region
+  region = "${var.aws_region}"
 }
 
 # 1. Create VPC
@@ -20,7 +20,7 @@ resource "aws_route_table" "opensrch-route-table" {
     vpc_id = aws_vpc.opensrch-vpc.id
 
     route {
-        cidr_block = var.cidr_block
+        cidr_block = "${"${var.cidr_block}"}"
         gateway_id = aws_internet_gateway.opensrch-gateway.id
     } 
 
@@ -39,7 +39,7 @@ resource "aws_subnet" "opensrch-subnet-1" {
     vpc_id = aws_vpc.opensrch-vpc.id
 
     cidr_block = "10.0.1.0/24"
-    availability_zone = var.aws_zone
+    availability_zone = "${var.aws_zone}"
 
     tags = {
       Name = "opensearch-subnet-1"
@@ -61,28 +61,28 @@ resource "aws_security_group" "allow_web_traffic" {
 
     ingress {
         description = "HTTPS"
-        from_port = var.ports.https
-        to_port = var.ports.https
+        from_port = "${var.ports.https}"
+        to_port = "${var.ports.https}"
         protocol = "tcp"
-        cidr_blocks = [var.cidr_block]
+        cidr_blocks = ["${var.cidr_block}"]
 
     }
 
     ingress {
         description = "HTTP"
-        from_port = var.ports.http
-        to_port = var.ports.http
+        from_port = "${var.ports.http}"
+        to_port = "${var.ports.http}"
         protocol = "tcp"
-        cidr_blocks = [var.cidr_block]
+        cidr_blocks = ["${var.cidr_block}"]
 
     }
 
     ingress {
         description = "SSH"
-        from_port = var.ports.ssh
-        to_port = var.ports.ssh
+        from_port = "${var.ports.ssh}"
+        to_port = "${var.ports.ssh}"
         protocol = "tcp"
-        cidr_blocks = [var.cidr_block]
+        cidr_blocks = ["${var.cidr_block}"]
 
     }
 
@@ -90,7 +90,7 @@ resource "aws_security_group" "allow_web_traffic" {
         from_port = 0
         to_port = 0
         protocol = "-1" # Allow any protocol
-        cidr_blocks = [var.cidr_block]
+        cidr_blocks = ["${var.cidr_block}"]
     }
 
     tags = {
@@ -101,7 +101,7 @@ resource "aws_security_group" "allow_web_traffic" {
 # 7. Create Network interface with an IP  in the subnet that was created in step 4
 resource "aws_network_interface" "web-server-nic" {
     subnet_id = aws_subnet.opensrch-subnet-1.id
-    private_ips = [ var.private_ip ]
+    private_ips = [ "${var.private_ip}" ]
     security_groups = [aws_security_group.allow_web_traffic.id]
 }
 
@@ -114,7 +114,7 @@ resource "aws_eip" "one" {
     network_interface = aws_network_interface.web-server-nic.id
     # instance = aws_instance.opensearch.id
 
-    associate_with_private_ip = var.private_ip
+    associate_with_private_ip = "${var.private_ip}"
     # EIP may require IGW to exist. set an explicit dependency on the IGW
     depends_on = [ aws_internet_gateway.opensrch-gateway ]
 }
@@ -125,9 +125,9 @@ output "server_public_ip" {
 
 # 9. Create Ubuntu server and install/enable apache2
 resource "aws_instance" "opensearch" {
-  ami           = "ami-0905a3c97561e0b69"
-  instance_type = "t2.micro"
-  availability_zone = var.aws_zone
+  ami           = "${var.aws_ami.ami}"
+  instance_type = "${var.aws_ami.instance_type}"
+  availability_zone = "${var.aws_zone}"
   key_name = "opensearch-access-key"
 
   network_interface {
@@ -137,6 +137,7 @@ resource "aws_instance" "opensearch" {
 
   user_data = <<-EOF
                 #!/bin/bash
+
                 sudo apt update -y
                 sudo apt install apache2 -y
                 sudo systemctl start apache2
