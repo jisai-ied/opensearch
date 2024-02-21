@@ -458,3 +458,17 @@ resource "aws_security_group" "opensearch" {
 |-- sg.tf
 |-- variables.tf
 ```
+
+# Amazon Opensearch Service
+[Create a domains](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/createupdatedomains.html)
+
+Para desbloquear el almacenamiento remoto
+```sh
+terraform force-unlock ID
+
+```
+
+Luego para actualizar en remoto
+```sh
+terraform init -upgrade
+```

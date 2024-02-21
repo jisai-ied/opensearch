@@ -1,95 +1,61 @@
-# Create an encryption security policy
-resource "aws_opensearchserverless_security_policy" "encryption_policy" {
-  name        = "encryption-policy"
-  type        = "encryption"
-  description = "encryption policy for ${var.collection_name}"
-  policy = jsonencode({
-    Rules = [
+resource "aws_cloudwatch_log_group" "opensearch_log_group_index_slow_logs" {
+  name              = "/aws/opensearch/${var.domain}/index-slow"
+  retention_in_days = 14
+}
+
+resource "aws_cloudwatch_log_group" "opensearch_log_group_search_slow_logs" {
+  name              = "/aws/opensearch/${var.domain}/search-slow"
+  retention_in_days = 14
+}
+
+resource "aws_cloudwatch_log_group" "opensearch_log_group_es_application_logs" {
+  name              = "/aws/opensearch/${var.domain}/es-application"
+  retention_in_days = 14
+}
+
+resource "aws_cloudwatch_log_resource_policy" "opensearch_log_resource_policy" {
+  policy_name     = "${var.domain}-domain-log-resource-policy"
+  policy_document = <<CONFIG
+  {
+    "Version": "2012-10-17",
+    "Statement": [
       {
-        Resource = [
-          "collection/${var.collection_name}"
-        ],
-        ResourceType = "collection"
-      }
-    ],
-    AWSOwnedKey = true
-  })
-}
-
-# Creates a collection
-resource "aws_opensearchserverless_security_policy" "network_policy" {
-  name        = "network-policy"
-  type        = "network"
-  description = "public access for dashboard, VPC access for collection endpoint"
-  policy = jsonencode([
-    {
-      Description = "VPC access for collection endpoint",
-      Rules = [
-        {
-          ResourceType = "collection",
-          Resource = [
-            "collection/${var.collection_name}"
-          ]
-        }
-      ],
-      AllowFromPublic = false,
-      SourceVPCEs = [
-        aws_opensearchserverless_vpc_endpoint.vpc_endpoint.id
-      ]
-    },
-    {
-      Description = "Public access for dashboards",
-      Rules = [
-        {
-          ResourceType = "dashboard",
-          Resource = [
-            "collection/${var.collection_name}"
-          ]
-        }
-      ],
-      AllowFromPublic = true
-    }
-  ])
-}
-
-# Creates a VPC endpoint
-resource "aws_opensearchserverless_vpc_endpoint" "vpc_endpoint" {
-  name               = "vpc-endpoint"
-  vpc_id             = data.terraform_remote_state.cloudicity_core.outputs.vpc_id
-  subnet_ids         = data.terraform_remote_state.cloudicity_core.outputs.subnet_private_ids
-  security_group_ids = [aws_security_group.opensearch.id]
-}
-
-# Creates a data access policy
-resource "aws_opensearchserverless_access_policy" "data_access_policy" {
-  name        = "data-access-policy"
-  type        = "data"
-  description = "allow index and collection access"
-  policy = jsonencode([
-    {
-      Rules = [
-        {
-          ResourceType = "index",
-          Resource = [
-            "index/${var.collection_name}/*"
-          ],
-          Permission = [
-            "aoss:*" # Allow all actions (Amazon Opensearch Service Serverless)
-          ]
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": "*"
         },
-        {
-          ResourceType = "collection",
-          Resource = [
-            "collection/${var.collection_name}"
-          ],
-          Permission = [
-            "aoss:*"
-          ]
+        "Action": [
+          "logs:PutLogEvents",
+          "logs:PutLogEventsBatch",
+          "logs:CreateLogStream"
+        ],
+        "Resource": [
+          "${aws_cloudwatch_log_group.opensearch_log_group_index_slow_logs.arn}:*",
+          "${aws_cloudwatch_log_group.opensearch_log_group_search_slow_logs.arn}:*",
+          "${aws_cloudwatch_log_group.opensearch_log_group_es_application_logs.arn}:*"
+        ],
+        "Condition": {
+            "StringEquals": {
+                "aws:SourceAccount": "${data.aws_caller_identity.current.account_id}"
+            },
+            "ArnLike": {
+                "aws:SourceArn": "arn:aws:es:${var.aws_region}:${data.aws_caller_identity.current.account_id}:domain/${var.domain}"
+            }
         }
-      ],
-      Principal = [
-        data.aws_caller_identity.current.arn
-      ]
-    }
-  ])
+      }
+    ]
+  }
+  CONFIG
+}
+
+resource "random_password" "password" {
+  length  = 32
+  special = true
+}
+
+resource "aws_ssm_parameter" "opensearch_master_user" {
+  name        = "/service/${var.service}/MASTER_USER"
+  description = "opensearch_password for ${var.service} domain"
+  type        = "SecureString"
+  value       = "${var.master_user}, ${random_password.password.result}"
 }
